@@ -5,7 +5,9 @@ import requests
 from config import CITY_COORDS, DEFAULT_CITY, GOOGLE_PLACES_API_KEY, USE_MOCK_DATA
 
 TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
-FIELD_MASK = "places.id,places.displayName,places.rating,places.location"
+PHOTO_MEDIA_URL = "https://places.googleapis.com/v1/{photo_name}/media"
+FIELD_MASK = "places.id,places.displayName,places.rating,places.location,places.photos"
+PHOTO_MAX_WIDTH_PX = 400
 
 # Real-looking Edmonton place names so mock mode is usable without an API key.
 _MOCK_NAMES = {
@@ -34,6 +36,7 @@ def _mock_search(place_type, city):
             "latitude": lat0 + rng.uniform(-0.03, 0.03),
             "longitude": lon0 + rng.uniform(-0.03, 0.03),
             "google_place_id": f"mock-{place_type}-{name.lower().replace(' ', '-')}",
+            "photo_url": None,
         }
         for name in names
     ]
@@ -51,6 +54,14 @@ def _live_search(place_type, city):
     results = []
     for r in response.json().get("places", []):
         location = r.get("location", {})
+        photos = r.get("photos", [])
+        photo_url = None
+        if photos:
+            photo_name = photos[0]["name"]
+            photo_url = (
+                f"{PHOTO_MEDIA_URL.format(photo_name=photo_name)}"
+                f"?maxWidthPx={PHOTO_MAX_WIDTH_PX}&key={GOOGLE_PLACES_API_KEY}"
+            )
         results.append(
             {
                 "name": r.get("displayName", {}).get("text"),
@@ -59,6 +70,7 @@ def _live_search(place_type, city):
                 "latitude": location.get("latitude"),
                 "longitude": location.get("longitude"),
                 "google_place_id": r.get("id"),
+                "photo_url": photo_url,
             }
         )
     return results

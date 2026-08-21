@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS visits (
     visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     mood_at_visit TEXT,
     companion_type TEXT,
+    photo_path TEXT,
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (place_id) REFERENCES places(place_id)
 );

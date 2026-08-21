@@ -23,6 +23,17 @@ def create_tables():
     conn.commit()
     conn.close()
 
+def ensure_schema():
+    """Adds columns introduced after the initial schema, for databases created before them."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(visits)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "photo_path" not in columns:
+        cursor.execute("ALTER TABLE visits ADD COLUMN photo_path TEXT")
+    conn.commit()
+    conn.close()
+
 def seed_users():
     conn = get_connection()
     cursor = conn.cursor()
@@ -57,6 +68,15 @@ def get_all_users():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+def delete_user(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM reviews WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM visits WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
 
 def create_user(username, city):
     conn = get_connection()
@@ -102,13 +122,13 @@ def get_or_create_place(place):
     conn.close()
     return place_id
 
-def log_visit(user_id, place_id, mood, companion_type):
+def log_visit(user_id, place_id, mood, companion_type, photo_path=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        """INSERT INTO visits (user_id, place_id, mood_at_visit, companion_type)
-           VALUES (?, ?, ?, ?)""",
-        (user_id, place_id, mood, companion_type),
+        """INSERT INTO visits (user_id, place_id, mood_at_visit, companion_type, photo_path)
+           VALUES (?, ?, ?, ?, ?)""",
+        (user_id, place_id, mood, companion_type, photo_path),
     )
     conn.commit()
     conn.close()
@@ -117,7 +137,7 @@ def get_user_history(user_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        """SELECT p.name, p.category, v.mood_at_visit, v.companion_type, v.visited_at
+        """SELECT p.name, p.category, v.mood_at_visit, v.companion_type, v.visited_at, v.photo_path
            FROM visits v
            JOIN places p ON v.place_id = p.place_id
            WHERE v.user_id = ?
