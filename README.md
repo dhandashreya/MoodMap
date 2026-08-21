@@ -4,15 +4,23 @@ Pick a mood and who you're with, and MoodMap suggests places in your city to go 
 
 ![MoodMap screenshot](screenshot.png)
 
+## Features
+
+- Pick a mood and who you're with — every mood has a sensible default set of place types, so any combination returns results
+- Real place photos on each recommendation (Google Places API)
+- Log a visit, optionally attaching your own photo — shown as a thumbnail in your visit history
+- Visit history lives in the sidebar, always visible while browsing recommendations
+- Create or delete users from the sidebar — no password, just a name
+
 ## How it works
 
 | Component | Description |
 |---|---|
-| `mood_logic.py` | Maps a (mood, companion) pair to Google Places types, e.g. `("Low Energy + Cozy", "Solo")` → `["cafe", "book_store"]` |
-| `api_utils.py` | Looks up places for those types. Uses the Google Places API if a key is configured, otherwise falls back to mock Edmonton place data |
+| `mood_logic.py` | Maps mood → default Google Places types, with per-companion overrides where useful, e.g. `("Low Energy + Cozy", "Solo")` → `["cafe", "book_store"]` |
+| `api_utils.py` | Looks up places (and a photo) for those types. Uses the Google Places API if a key is configured, otherwise falls back to mock Edmonton place data |
 | `recommender.py` | Combines the two above and ranks results by rating |
-| `database.py` | SQLite storage for users, places, visits, and reviews |
-| `app.py` | Streamlit UI — pick a mood, get recommendations, log visits |
+| `database.py` | SQLite storage for users, places, visits (with optional photo), and reviews |
+| `app.py` | Streamlit UI — pick a mood, get recommendations, log visits, manage users |
 
 ## Setup
 
@@ -22,6 +30,8 @@ python -m venv .venv
 pip install -r requirements.txt
 python database.py            # creates moodmap.db and seeds sample users
 ```
+
+Or just double-click `run.bat`, which does the above and starts the app.
 
 ## Using a real Google Places API key (optional)
 
