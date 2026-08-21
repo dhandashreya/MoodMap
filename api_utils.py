@@ -4,7 +4,8 @@ import requests
 
 from config import CITY_COORDS, DEFAULT_CITY, GOOGLE_PLACES_API_KEY, USE_MOCK_DATA
 
-TEXT_SEARCH_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
+FIELD_MASK = "places.id,places.displayName,places.rating,places.location"
 
 # Real-looking Edmonton place names so mock mode is usable without an API key.
 _MOCK_NAMES = {
@@ -39,23 +40,25 @@ def _mock_search(place_type, city):
 
 
 def _live_search(place_type, city):
-    params = {
-        "query": f"{place_type.replace('_', ' ')} in {city}",
-        "key": GOOGLE_PLACES_API_KEY,
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": FIELD_MASK,
     }
-    response = requests.get(TEXT_SEARCH_URL, params=params, timeout=10)
+    body = {"textQuery": f"{place_type.replace('_', ' ')} in {city}"}
+    response = requests.post(TEXT_SEARCH_URL, json=body, headers=headers, timeout=10)
     response.raise_for_status()
     results = []
-    for r in response.json().get("results", []):
-        location = r.get("geometry", {}).get("location", {})
+    for r in response.json().get("places", []):
+        location = r.get("location", {})
         results.append(
             {
-                "name": r.get("name"),
+                "name": r.get("displayName", {}).get("text"),
                 "category": place_type,
                 "rating": r.get("rating"),
-                "latitude": location.get("lat"),
-                "longitude": location.get("lng"),
-                "google_place_id": r.get("place_id"),
+                "latitude": location.get("latitude"),
+                "longitude": location.get("longitude"),
+                "google_place_id": r.get("id"),
             }
         )
     return results
