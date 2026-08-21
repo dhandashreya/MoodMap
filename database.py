@@ -1,7 +1,8 @@
 import sqlite3
 import os
 
-DB_name = "moodmap.db" 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_name = os.path.join(BASE_DIR, "moodmap.db")
 
 def get_connection():
     conn = sqlite3.connect(DB_name)
@@ -12,8 +13,7 @@ def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    schema_path = os.path.join(BASE_DIR,'sql', 'schema.sql') 
+    schema_path = os.path.join(BASE_DIR,'sql', 'schema.sql')
 
     with open(schema_path, 'r', encoding='utf-8') as f:
         sql_script = f.read()
@@ -57,6 +57,19 @@ def get_all_users():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+def create_user(username, city):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT OR IGNORE INTO users (username, city) VALUES (?, ?)",
+        (username, city),
+    )
+    conn.commit()
+    cursor.execute("SELECT user_id FROM users WHERE username = ?", (username,))
+    user_id = cursor.fetchone()[0]
+    conn.close()
+    return user_id
 
 def get_or_create_place(place):
     conn = get_connection()

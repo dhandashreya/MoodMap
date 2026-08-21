@@ -4,7 +4,15 @@ import pandas as pd
 import streamlit as st
 
 from config import DEFAULT_CITY, USE_MOCK_DATA
-from database import create_tables, get_all_users, get_or_create_place, get_user_history, log_visit
+from database import (
+    create_tables,
+    create_user,
+    get_all_users,
+    get_or_create_place,
+    get_user_history,
+    log_visit,
+    seed_users,
+)
 from mood_logic import MOOD_MAP
 from recommender import recommend_places
 
@@ -14,6 +22,11 @@ st.set_page_config(page_title="MoodMap", page_icon="🧭", layout="centered")
 
 if not DB_PATH.exists():
     create_tables()
+
+users = get_all_users()
+if not users:
+    seed_users()
+    users = get_all_users()
 
 st.title("🧭 MoodMap")
 st.caption("Tell us your mood, we'll tell you where to go.")
@@ -25,16 +38,29 @@ if USE_MOCK_DATA:
         icon="ℹ️",
     )
 
-users = get_all_users()
 usernames = [u[1] for u in users]
 
 with st.sidebar:
     st.subheader("Who's asking?")
     if usernames:
-        username = st.selectbox("User", usernames)
+        selected = st.session_state.get("selected_username")
+        default_idx = usernames.index(selected) if selected in usernames else 0
+        username = st.selectbox("User", usernames, index=default_idx)
+        st.session_state["selected_username"] = username
     else:
         username = None
-        st.warning("No users yet. Run `python database.py` to seed sample users.")
+
+    with st.expander("+ New user"):
+        new_name = st.text_input("Name", key="new_user_name")
+        new_city = st.text_input("City", value=DEFAULT_CITY, key="new_user_city")
+        if st.button("Create user"):
+            name = new_name.strip()
+            if name:
+                create_user(name, new_city.strip() or DEFAULT_CITY)
+                st.session_state["selected_username"] = name
+                st.rerun()
+            else:
+                st.warning("Enter a name first.")
 
 moods = sorted({mood for mood, _ in MOOD_MAP.keys()})
 companions = sorted({companion for _, companion in MOOD_MAP.keys()})
