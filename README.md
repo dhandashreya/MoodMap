@@ -2,6 +2,8 @@
 
 Pick a mood and who you're with, and MoodMap suggests places in your city to go — then lets you log the visit and build a history.
 
+![MoodMap screenshot](screenshot.png)
+
 ## How it works
 
 | Component | Description |
